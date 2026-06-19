@@ -6,12 +6,28 @@ libsimplennet is a lightweight multi-language prediction SDK. Import it, choose 
 
 The same native C++ core powers Python, C++, Java, and Go, so models can be saved once as `.snet` directories and reused across supported runtimes.
 
+## Any datatype, one prediction flow
+
+libsimplennet has two input paths:
+
+- **Numeric features:** pass lists, arrays, matrices, DataFrames, or native `double` matrices.
+- **Universal app data:** serialize anything your project owns into a stable string, usually JSON, and call the text API.
+
+That means a cart object, sensor payload, game state, user profile, event record, or custom DTO can become a prediction input in every supported language:
+
+```json
+{"user":"team","plan":"business","usage":{"seats":12,"minutes":480}}
+```
+
+Train with examples, choose the output type, and predict `int`, `float`, or category labels from the same shape of payload later. Python also accepts many mixed Python objects directly for convenience, but JSON/text is the portable path for sharing `.snet` models across languages.
+
 ## Why libsimplennet?
 
 - **Simple mental model:** choose `int`, `float`, or `category`, then `fit` and `predict`.
 - **Fast to embed:** designed for tools, services, scripts, desktop apps, and local workflows.
 - **Multi-language by design:** C++ core, Python wrapper, Java JNI wrapper, and Go native-DLL wrapper.
 - **Portable model files:** save trained networks as `.snet` directories with metadata and weights.
+- **Universal text inputs:** use JSON strings for arbitrary data in C++, Python, Java, and Go.
 - **No heavy ML ceremony:** a small dense neural network for quick supervised tabular predictions.
 
 ## Good fits
@@ -58,6 +74,21 @@ loaded = SimplePredictor.load("double.snet")
 print(loaded.predict([[5]]))
 ```
 
+Predict from arbitrary app data by passing stable JSON strings:
+
+```python
+events = [
+    '{"kind":"cart","items":1}',
+    '{"kind":"cart","items":2}',
+    '{"kind":"cart","items":3}',
+]
+
+predictor = SimplePredictor(output_type=int, epochs=30, learning_rate=0.001)
+predictor.fit_text(events, [2, 4, 6])
+
+print(predictor.predict_text(['{"kind":"cart","items":4}']))
+```
+
 ## C++ quickstart
 
 ```cpp
@@ -72,9 +103,13 @@ int main() {
     options.hidden_layers = {4};
 
     simplennet::SimplePredictor predictor(simplennet::OutputType::Int, options);
-    predictor.fit({{0}, {1}, {2}, {3}}, {0, 2, 4, 6});
+    predictor.fit_text({
+        R"({"kind":"cart","items":1})",
+        R"({"kind":"cart","items":2})",
+        R"({"kind":"cart","items":3})",
+    }, {2, 4, 6});
 
-    std::cout << predictor.predict_ints({{4}}).front() << "\n";
+    std::cout << predictor.predict_text_ints({R"({"kind":"cart","items":4})"}).front() << "\n";
 }
 ```
 
@@ -90,8 +125,10 @@ ctest --test-dir build-native -C Release --output-on-failure
 
 ```java
 SimplePredictor predictor = new SimplePredictor(OutputType.INT);
-predictor.fit(new double[][]{{0}, {1}, {2}, {3}}, new double[]{0, 2, 4, 6});
-int[] values = predictor.predictInts(new double[][]{{4}});
+predictor.fitText(
+    new String[]{"{\"kind\":\"cart\",\"items\":1}", "{\"kind\":\"cart\",\"items\":2}"},
+    new double[]{2, 4});
+int[] values = predictor.predictTextInts(new String[]{"{\"kind\":\"cart\",\"items\":3}"});
 ```
 
 Run with the native DLL on the library path:
@@ -111,18 +148,28 @@ defer predictor.Close()
 
 _ = predictor.Fit([][]float64{{0}, {1}, {2}, {3}}, []float64{0, 2, 4, 6})
 values, _ := predictor.PredictInts([][]float64{{4}})
+
+_ = predictor.FitText(
+    []string{`{"kind":"cart","items":1}`, `{"kind":"cart","items":2}`},
+    []float64{2, 4},
+)
+textValues, _ := predictor.PredictTextInts([]string{`{"kind":"cart","items":3}`})
 ```
 
 Set the native DLL path before running:
 
 ```powershell
-$env:SIMPLENET_NATIVE_LIBRARY = "D:\path\to\build-native\Release\simplennet_native.dll"
+$env:SIMPLENET_NATIVE_LIBRARY = "D:\path\to\build-native\Release\simplennet.dll"
 go test ./...
 ```
 
+## Other languages
+
+The public C ABI in `include/simplennet/c_api.h` is the bridge for C#, Rust, JavaScript native addons, Ruby, Swift, and any runtime that can call a C-compatible shared library. Build the native project and bind to the `simplennet` shared library for numeric and JSON/text prediction APIs.
+
 ## Website and docs
 
-A standalone product website lives in `docs/website/index.html`. Open it directly in a browser.
+A standalone GitHub Pages-ready product website lives in `docs/index.html`. Configure GitHub Pages to publish from the `/docs` folder.
 
 The MkDocs content also lives in `docs/`:
 
@@ -136,6 +183,7 @@ mkdocs serve
 `save()` writes a `.snet` directory:
 
 - `model.json` stores architecture, output type, labels, feature names, training config, and `snet_format_version`.
+- For text/JSON models, `model.json` also stores `input_encoding: "text"` and the encoder width.
 - `weights.bin` stores little-endian weights and biases.
 
 The format starts at `snet_format_version: 1`.

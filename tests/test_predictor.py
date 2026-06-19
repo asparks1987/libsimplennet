@@ -51,3 +51,24 @@ def test_save_load_round_trip_preserves_prediction(tmp_path):
     assert after == before
     assert (tmp_path / "double-predictor.snet" / "model.json").exists()
     assert (tmp_path / "double-predictor.snet" / "weights.bin").exists()
+
+
+def test_text_prediction_round_trip_preserves_portable_encoding(tmp_path):
+    predictor = SimplePredictor(output_type=int, epochs=5, hidden_units=(4,), learning_rate=0.001)
+    predictor.fit_text(
+        [
+            '{"kind":"cart","items":1}',
+            '{"kind":"cart","items":2}',
+            '{"kind":"cart","items":3}',
+        ],
+        [2, 4, 6],
+        width=32,
+    )
+    before = predictor.predict_text(['{"kind":"cart","items":4}'])
+
+    predictor.save(tmp_path / "text-predictor.snet")
+    loaded = SimplePredictor.load(tmp_path / "text-predictor.snet")
+    after = loaded.predict_text(['{"kind":"cart","items":4}'])
+
+    assert isinstance(after, int)
+    assert after == before

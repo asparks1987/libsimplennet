@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure native build
+        run: cmake -S . -B build-native
+
+      - name: Build native SDK
+        run: cmake --build build-native --config Release
+
+      - name: Run C++ tests
+        run: ctest --test-dir build-native -C Release --output-on-failure
+
+      - name: Run Python tests
+        run: python -m pip install pytest numpy pandas && python -m pytest
+
+      - name: Build Python wheel
+        run: python -m pip wheel . --no-deps -w dist_verify
+
+      - name: Smoke Python wheel
+        shell: pwsh
+        run: |
+          $wheel = Get-ChildItem .\dist_verify -Filter *.whl | Select-Object -First 1
+          python -m pip install --no-deps --target .\wheel_smoke $wheel.FullName
+          $env:PYTHONPATH = (Resolve-Path .\wheel_smoke).Path
+          @'
+          from simplennet import SimplePredictor, __version__
+          assert __version__ == "1.0.0"
+          predictor = SimplePredictor(output_type=int, epochs=5, hidden_units=(4,), learning_rate=0.001)
+          predictor.fit_text(['{"kind":"cart","items":1}', '{"kind":"cart","items":2}', '{"kind":"cart","items":3}'], [2, 4, 6], width=32)
+          assert isinstance(predictor.predict_text(['{"kind":"cart","items":4}']), int)
+          print("python wheel smoke passed")
+          '@ | python -
+
+      - name: Compile and smoke Java wrapper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path java\target\classes | Out-Null
+          $files = Get-ChildItem -Recurse java\src\main\java,java\src\test\java -Filter *.java | ForEach-Object { $_.FullName }
+          javac -d java\target\classes $files
+          java "-Djava.library.path=build-native\Release" -cp "java\target\classes" ai.simplennet.SmokeTest
+
+      - name: Run Go wrapper tests
+        shell: pwsh
+        working-directory: go
+        run: |
+          $env:SIMPLENET_NATIVE_LIBRARY = (Resolve-Path ..\build-native\Release\simplennet.dll).Path
+          go test -count=1 ./...

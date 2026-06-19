@@ -45,6 +45,24 @@ public final class SimplePredictor implements AutoCloseable {
         return this;
     }
 
+    public SimplePredictor fitText(String[] inputs, double[] targets) {
+        return fitText(inputs, targets, 64, 30, 0.01);
+    }
+
+    public SimplePredictor fitText(String[] inputs, double[] targets, int width, int epochs, double learningRate) {
+        nativeFitTextNumeric(nativeHandle, inputs, targets, width, epochs, learningRate);
+        return this;
+    }
+
+    public SimplePredictor fitTextLabels(String[] inputs, List<String> targets) {
+        return fitTextLabels(inputs, targets, 64, 30, 0.01);
+    }
+
+    public SimplePredictor fitTextLabels(String[] inputs, List<String> targets, int width, int epochs, double learningRate) {
+        nativeFitTextLabels(nativeHandle, inputs, targets.toArray(new String[0]), width, epochs, learningRate);
+        return this;
+    }
+
     public double[] predictNumbers(double[][] inputs) {
         return nativePredictNumbers(nativeHandle, inputs);
     }
@@ -55,6 +73,18 @@ public final class SimplePredictor implements AutoCloseable {
 
     public String[] predictLabels(double[][] inputs) {
         return nativePredictLabels(nativeHandle, inputs);
+    }
+
+    public double[] predictTextNumbers(String[] inputs) {
+        return nativePredictTextNumbers(nativeHandle, inputs);
+    }
+
+    public int[] predictTextInts(String[] inputs) {
+        return nativePredictTextInts(nativeHandle, inputs);
+    }
+
+    public String[] predictTextLabels(String[] inputs) {
+        return nativePredictTextLabels(nativeHandle, inputs);
     }
 
     public void save(Path path) {
@@ -83,9 +113,14 @@ public final class SimplePredictor implements AutoCloseable {
     private static native void nativeDestroy(long handle);
     private static native void nativeFitNumeric(long handle, double[][] inputs, double[] targets, int epochs, double learningRate);
     private static native void nativeFitLabels(long handle, double[][] inputs, String[] targets, int epochs, double learningRate);
+    private static native void nativeFitTextNumeric(long handle, String[] inputs, double[] targets, int width, int epochs, double learningRate);
+    private static native void nativeFitTextLabels(long handle, String[] inputs, String[] targets, int width, int epochs, double learningRate);
     private static native double[] nativePredictNumbers(long handle, double[][] inputs);
     private static native int[] nativePredictInts(long handle, double[][] inputs);
     private static native String[] nativePredictLabels(long handle, double[][] inputs);
+    private static native double[] nativePredictTextNumbers(long handle, String[] inputs);
+    private static native int[] nativePredictTextInts(long handle, String[] inputs);
+    private static native String[] nativePredictTextLabels(long handle, String[] inputs);
     private static native void nativeSave(long handle, String path);
     private static native long nativeLoad(String path);
     private static native int nativeOutputType(long handle);

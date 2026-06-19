@@ -1,6 +1,6 @@
 # Java And Go
 
-Java and Go are runtime-supported through the shared native DLL.
+Java and Go are runtime-supported through the native build artifacts.
 
 ## Java
 
@@ -17,6 +17,8 @@ Run with:
 ```bash
 java -Djava.library.path=build-native/Release -cp java/target/classes ai.simplennet.SmokeTest
 ```
+
+Java loads `simplennet_native`, the JNI bridge built when CMake finds a JDK.
 
 ## Go
 
@@ -35,10 +37,10 @@ values, _ := predictor.PredictInts(inputs)
 Set the native DLL path before running Go tests:
 
 ```powershell
-$env:SIMPLENET_NATIVE_LIBRARY = "D:\path\to\build-native\Release\simplennet_native.dll"
+$env:SIMPLENET_NATIVE_LIBRARY = "D:\path\to\build-native\Release\simplennet.dll"
 go test ./...
 ```
 
 ## Binding Boundary
 
-Both wrappers use the shared native DLL so all languages share one native training and prediction implementation.
+Go uses the language-neutral C ABI exported by `simplennet`. Java uses the JNI bridge, which delegates into the same C++ core. Other languages should bind to `include/simplennet/c_api.h`.

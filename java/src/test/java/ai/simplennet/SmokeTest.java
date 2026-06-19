@@ -17,8 +17,25 @@ public final class SmokeTest {
         if (reloaded.length != 1) {
             throw new AssertionError("expected one prediction after load");
         }
+
+        SimplePredictor textPredictor = new SimplePredictor(OutputType.INT);
+        textPredictor.fitText(
+            new String[]{
+                "{\"kind\":\"cart\",\"items\":1}",
+                "{\"kind\":\"cart\",\"items\":2}",
+                "{\"kind\":\"cart\",\"items\":3}"
+            },
+            new double[]{2, 4, 6},
+            32,
+            10,
+            0.001);
+        int[] textValues = textPredictor.predictTextInts(new String[]{"{\"kind\":\"cart\",\"items\":4}"});
+        if (textValues.length != 1) {
+            throw new AssertionError("expected one text prediction");
+        }
         predictor.close();
         loaded.close();
+        textPredictor.close();
         System.out.println("java smoke test passed");
     }
 }

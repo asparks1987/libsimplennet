@@ -32,7 +32,7 @@
             <h1>Plug in a tiny network. Start predicting.</h1>
             <p class="hero-copy">
               libsimplennet is a compact SDK for adding quick supervised predictions to ordinary apps.
-              Pick the output type, feed it examples, and call predict from Python, C++, Java, or Go.
+              Pick the output type, feed it numeric rows or JSON app data, and call predict from Python, C++, Java, or Go.
             </p>
             <div class="hero-actions">
               <a class="button primary" href="#quickstart">Start in 30 seconds</a>
@@ -84,7 +84,7 @@
             </article>
             <article class="tile">
               <strong>Train from examples</strong>
-              <p>Pass rows of tabular data and the target answers your app already understands.</p>
+              <p>Pass rows of tabular data or serialized JSON payloads and the target answers your app already understands.</p>
             </article>
             <article class="tile">
               <strong>Reuse everywhere</strong>
@@ -112,8 +112,14 @@ predictor = SimplePredictor(
     hidden_units=(4,),
 )
 
-predictor.fit([[0], [1], [2], [3]], [0, 2, 4, 6])
-print(predictor.predict([[4]]))</code></pre>
+events = [
+    '{"kind":"cart","items":1}',
+    '{"kind":"cart","items":2}',
+    '{"kind":"cart","items":3}',
+]
+
+predictor.fit_text(events, [2, 4, 6])
+print(predictor.predict_text(['{"kind":"cart","items":4}']))</code></pre>
           </div>
         </section>
 
@@ -125,7 +131,7 @@ print(predictor.predict([[4]]))</code></pre>
           <div class="grid four">
             <article class="language-card">
               <h3>Python <span class="tag">ready</span></h3>
-              <p>Friendly lists, row dictionaries, NumPy arrays, and pandas DataFrames.</p>
+              <p>Friendly lists, row dictionaries, NumPy arrays, pandas DataFrames, and JSON/text inputs.</p>
             </article>
             <article class="language-card">
               <h3>C++ <span class="tag">core</span></h3>
@@ -151,6 +157,7 @@ print(predictor.predict([[4]]))</code></pre>
             <div class="use-case"><span class="icon">#</span><div><strong>Scores and counts</strong><br>Estimate quantities, rankings, thresholds, and simple numeric outcomes.</div></div>
             <div class="use-case"><span class="icon">$</span><div><strong>Operational estimates</strong><br>Predict prices, durations, demand, utilization, or confidence values.</div></div>
             <div class="use-case"><span class="icon">A</span><div><strong>Labels and routing</strong><br>Classify rows into categories your app can route, display, or trigger on.</div></div>
+            <div class="use-case"><span class="icon">{}</span><div><strong>Any app datatype</strong><br>Serialize custom objects, events, payloads, or state to JSON and predict typed outputs.</div></div>
             <div class="use-case"><span class="icon">S</span><div><strong>Saved local models</strong><br>Train once, persist as `.snet`, and reload without rebuilding the network.</div></div>
           </div>
         </section>

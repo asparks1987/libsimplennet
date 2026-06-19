@@ -17,6 +17,8 @@ Methods:
 
 - `fit(X, y)`: trains the native model.
 - `predict(X)`: returns one value for one row or a list for many rows.
+- `fit_text(inputs, y)`: trains from portable serialized text or JSON inputs.
+- `predict_text(inputs)`: predicts from serialized text or JSON inputs.
 - `save(path)`: writes a `.snet` directory.
 - `SimplePredictor.load(path)`: loads a `.snet` directory.
 
@@ -26,6 +28,8 @@ Methods:
 simplennet::SimplePredictor predictor(simplennet::OutputType::Int, options);
 predictor.fit(inputs, targets);
 auto values = predictor.predict_ints(inputs);
+predictor.fit_text({R"({"kind":"cart","items":1})"}, {2});
+auto text_values = predictor.predict_text_ints({R"({"kind":"cart","items":2})"});
 predictor.save("model.snet");
 auto loaded = simplennet::SimplePredictor::load("model.snet");
 ```
@@ -38,7 +42,12 @@ The C ABI is declared in `include/simplennet/c_api.h` and uses opaque handles:
 - `snet_destroy`
 - `snet_fit_numeric`
 - `snet_fit_labels`
+- `snet_fit_text_numeric_bits`
+- `snet_fit_text_labels_bits`
 - `snet_predict_numeric`
+- `snet_predict_text_numeric`
+- `snet_predict_text_ints`
+- `snet_predict_text_class_indices`
 - `snet_save`
 - `snet_load`
 - `snet_last_error`

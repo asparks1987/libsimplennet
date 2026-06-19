@@ -65,6 +65,26 @@ SNET_API int snet_fit_labels_bits(
     size_t epochs,
     unsigned long long learning_rate_bits);
 
+SNET_API int snet_fit_text_numeric_bits(
+    snet_predictor_t* predictor,
+    const char* const* inputs,
+    size_t input_count,
+    const double* targets,
+    size_t target_count,
+    size_t width,
+    size_t epochs,
+    unsigned long long learning_rate_bits);
+
+SNET_API int snet_fit_text_labels_bits(
+    snet_predictor_t* predictor,
+    const char* const* inputs,
+    size_t input_count,
+    const char* const* labels,
+    size_t label_count,
+    size_t width,
+    size_t epochs,
+    unsigned long long learning_rate_bits);
+
 SNET_API int snet_predict_numeric(
     const snet_predictor_t* predictor,
     const double* row_major_inputs,
@@ -86,6 +106,27 @@ SNET_API int snet_predict_class_indices(
     const double* row_major_inputs,
     size_t rows,
     size_t cols,
+    size_t* outputs,
+    size_t output_count);
+
+SNET_API int snet_predict_text_numeric(
+    const snet_predictor_t* predictor,
+    const char* const* inputs,
+    size_t input_count,
+    double* outputs,
+    size_t output_count);
+
+SNET_API int snet_predict_text_ints(
+    const snet_predictor_t* predictor,
+    const char* const* inputs,
+    size_t input_count,
+    long long* outputs,
+    size_t output_count);
+
+SNET_API int snet_predict_text_class_indices(
+    const snet_predictor_t* predictor,
+    const char* const* inputs,
+    size_t input_count,
     size_t* outputs,
     size_t output_count);
 

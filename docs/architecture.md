@@ -14,10 +14,11 @@ The C++17 core implements a small dense MLP for supervised tabular prediction. I
 
 ## C ABI
 
-The C ABI in `include/simplennet/c_api.h` is the stable boundary for future wrappers. It uses:
+The C ABI in `include/simplennet/c_api.h` is the stable boundary for wrappers in Go, C#, Rust, JavaScript native addons, Ruby, Swift, and other runtimes that can call a C-compatible shared library. CMake builds this boundary as the `simplennet` shared library.
 
 - Opaque predictor handles
 - Plain row-major numeric arrays
+- String arrays for serialized text/JSON inputs
 - String arrays for categorical labels
 - Integer return codes
 - `snet_last_error()` for diagnostics
@@ -31,7 +32,7 @@ The Python package keeps the friendly `SimplePredictor` API and delegates traini
 Java and Go wrap the shared native DLL and expose the same model semantics as Python and C++.
 
 - Java uses JNI and `System.loadLibrary`.
-- Go uses the exported C ABI from the native DLL.
+- Go uses the exported C ABI from `simplennet.dll`.
 - Both can train, predict, save, and load the same `.snet` model directories.
 
 ## `.snet` format

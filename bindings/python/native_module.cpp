@@ -52,9 +52,19 @@ PYBIND11_MODULE(_native, m) {
             py::arg("seed") = 42)
         .def("fit_numeric", &simplennet::SimplePredictor::fit)
         .def("fit_labels", &simplennet::SimplePredictor::fit_labels)
+        .def("fit_text", &simplennet::SimplePredictor::fit_text, py::arg("inputs"), py::arg("targets"), py::arg("width") = 64)
+        .def(
+            "fit_text_labels",
+            &simplennet::SimplePredictor::fit_text_labels,
+            py::arg("inputs"),
+            py::arg("targets"),
+            py::arg("width") = 64)
         .def("predict_numbers", &simplennet::SimplePredictor::predict_numbers)
         .def("predict_ints", &simplennet::SimplePredictor::predict_ints)
         .def("predict_labels", &simplennet::SimplePredictor::predict_labels)
+        .def("predict_text_numbers", &simplennet::SimplePredictor::predict_text_numbers)
+        .def("predict_text_ints", &simplennet::SimplePredictor::predict_text_ints)
+        .def("predict_text_labels", &simplennet::SimplePredictor::predict_text_labels)
         .def("save", &simplennet::SimplePredictor::save)
         .def_static("load", &simplennet::SimplePredictor::load)
         .def_property_readonly("output_type", &simplennet::SimplePredictor::output_type_name)

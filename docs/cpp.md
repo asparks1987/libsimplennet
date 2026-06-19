@@ -29,3 +29,5 @@ ctest --test-dir build --output-on-failure
 ```
 
 The public headers are in `include/simplennet`.
+
+For languages outside the first-party wrappers, bind to `include/simplennet/c_api.h` and the `simplennet` shared library. The C ABI includes numeric and text/JSON fit/predict functions, so custom runtimes can share the same `.snet` model format.

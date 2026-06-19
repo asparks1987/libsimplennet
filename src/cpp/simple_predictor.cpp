@@ -40,6 +40,22 @@ std::vector<double> softmax(const std::vector<double>& values) {
     return result;
 }
 
+std::uint64_t fnv1a(const std::string& value) {
+    std::uint64_t hash = 14695981039346656037ull;
+    for (unsigned char ch : value) {
+        hash ^= static_cast<std::uint64_t>(ch);
+        hash *= 1099511628211ull;
+    }
+    return hash;
+}
+
+void add_text_feature(std::vector<double>& row, const std::string& token, double amount = 1.0) {
+    const std::uint64_t hash = fnv1a(token);
+    const std::size_t index = static_cast<std::size_t>(hash % row.size());
+    const double sign = ((hash >> 8) & 1ull) == 0ull ? 1.0 : -1.0;
+    row[index] += sign * amount;
+}
+
 std::string escape_json(const std::string& value) {
     std::ostringstream out;
     for (char ch : value) {
@@ -180,6 +196,7 @@ void SimplePredictor::fit(const Matrix& inputs, const std::vector<double>& targe
     }
     validate_inputs(inputs);
     input_dim_ = inputs[0].size();
+    input_encoding_ = "numeric";
     initialize(input_dim_, 1);
     train_numeric(inputs, targets);
 }
@@ -209,8 +226,30 @@ void SimplePredictor::fit_labels(const Matrix& inputs, const std::vector<std::st
     }
 
     input_dim_ = inputs[0].size();
+    input_encoding_ = "numeric";
     initialize(input_dim_, class_labels_.size());
     train_category(inputs, encoded);
+}
+
+void SimplePredictor::fit_text(const std::vector<std::string>& inputs, const std::vector<double>& targets, std::size_t width) {
+    Matrix encoded = encode_text_inputs(inputs, width);
+    text_width_ = width;
+    input_encoding_ = "text";
+    fit(encoded, targets);
+    input_encoding_ = "text";
+    text_width_ = width;
+}
+
+void SimplePredictor::fit_text_labels(
+    const std::vector<std::string>& inputs,
+    const std::vector<std::string>& targets,
+    std::size_t width) {
+    Matrix encoded = encode_text_inputs(inputs, width);
+    text_width_ = width;
+    input_encoding_ = "text";
+    fit_labels(encoded, targets);
+    input_encoding_ = "text";
+    text_width_ = width;
 }
 
 std::vector<double> SimplePredictor::predict_numbers(const Matrix& inputs) const {
@@ -257,6 +296,18 @@ std::vector<std::string> SimplePredictor::predict_labels(const Matrix& inputs) c
     return results;
 }
 
+std::vector<double> SimplePredictor::predict_text_numbers(const std::vector<std::string>& inputs) const {
+    return predict_numbers(encode_text_inputs(inputs, text_width_));
+}
+
+std::vector<int> SimplePredictor::predict_text_ints(const std::vector<std::string>& inputs) const {
+    return predict_ints(encode_text_inputs(inputs, text_width_));
+}
+
+std::vector<std::string> SimplePredictor::predict_text_labels(const std::vector<std::string>& inputs) const {
+    return predict_labels(encode_text_inputs(inputs, text_width_));
+}
+
 void SimplePredictor::save(const std::filesystem::path& directory) const {
     if (!is_fit()) {
         throw std::runtime_error("predictor has not been fit");
@@ -277,6 +328,8 @@ void SimplePredictor::save(const std::filesystem::path& directory) const {
     metadata << "  \"snet_format_version\": " << kFormatVersion << ",\n";
     metadata << "  \"output_type\": \"" << output_type_name() << "\",\n";
     metadata << "  \"input_dim\": " << input_dim_ << ",\n";
+    metadata << "  \"input_encoding\": \"" << input_encoding_ << "\",\n";
+    metadata << "  \"text_width\": " << text_width_ << ",\n";
     metadata << "  \"layer_sizes\": " << size_array_json(layer_sizes) << ",\n";
     metadata << "  \"hidden_layers\": " << size_array_json(options_.hidden_layers) << ",\n";
     metadata << "  \"epochs\": " << options_.epochs << ",\n";
@@ -314,6 +367,13 @@ SimplePredictor SimplePredictor::load(const std::filesystem::path& directory) {
 
     SimplePredictor predictor(output_type_from_string(json_string_value(metadata, "output_type")), options);
     predictor.input_dim_ = json_size_value(metadata, "input_dim");
+    try {
+        predictor.input_encoding_ = json_string_value(metadata, "input_encoding");
+        predictor.text_width_ = json_size_value(metadata, "text_width");
+    } catch (const std::runtime_error&) {
+        predictor.input_encoding_ = "numeric";
+        predictor.text_width_ = 64;
+    }
     predictor.feature_names_ = json_string_array(metadata, "feature_names");
     predictor.class_labels_ = json_string_array(metadata, "class_labels");
 
@@ -558,6 +618,31 @@ void SimplePredictor::train_category(const Matrix& inputs, const std::vector<std
             }
         }
     }
+}
+
+Matrix SimplePredictor::encode_text_inputs(const std::vector<std::string>& inputs, std::size_t width) const {
+    if (inputs.empty()) {
+        throw std::runtime_error("text inputs must not be empty");
+    }
+    if (width == 0) {
+        throw std::runtime_error("text encoder width must be greater than zero");
+    }
+
+    Matrix matrix;
+    matrix.reserve(inputs.size());
+    for (const std::string& input : inputs) {
+        std::vector<double> row(width, 0.0);
+        add_text_feature(row, "text:" + input);
+        add_text_feature(row, "length", static_cast<double>(input.size()) / 128.0);
+        for (std::size_t i = 0; i < input.size(); ++i) {
+            add_text_feature(row, "char:" + input.substr(i, 1), 0.25);
+            if (i + 3 <= input.size()) {
+                add_text_feature(row, "tri:" + input.substr(i, 3), 0.5);
+            }
+        }
+        matrix.push_back(std::move(row));
+    }
+    return matrix;
 }
 
 OutputType output_type_from_string(const std::string& value) {

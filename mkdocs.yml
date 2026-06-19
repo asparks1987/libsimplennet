@@ -4,8 +4,8 @@ repo_url: https://github.com/asparks1987/libsimplennet
 theme:
   name: material
 nav:
-  - Home: index.md
-  - Product Website: website/index.html
+  - Product Website: index.html
+  - Docs Overview: overview.md
   - Installation: installation.md
   - Architecture: architecture.md
   - User Guide: user-guide.md

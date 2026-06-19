@@ -81,6 +81,34 @@ func (p *SimplePredictor) FitLabels(inputs [][]float64, targets []string) error 
 	return p.lib.fitLabels(p.handle, flat, rows, cols, targets, 30, 0.01)
 }
 
+// FitText trains a numeric predictor from serialized text or JSON inputs.
+func (p *SimplePredictor) FitText(inputs []string, targets []float64) error {
+	if p.OutputType == OutputCategory {
+		return errors.New("use FitTextLabels for categorical predictors")
+	}
+	if len(inputs) == 0 {
+		return errors.New("inputs must not be empty")
+	}
+	if len(targets) != len(inputs) {
+		return fmt.Errorf("target count %d does not match input count %d", len(targets), len(inputs))
+	}
+	return p.lib.fitTextNumeric(p.handle, inputs, targets, 64, 30, 0.01)
+}
+
+// FitTextLabels trains a categorical predictor from serialized text or JSON inputs.
+func (p *SimplePredictor) FitTextLabels(inputs []string, targets []string) error {
+	if p.OutputType != OutputCategory {
+		return errors.New("use FitText for numeric predictors")
+	}
+	if len(inputs) == 0 {
+		return errors.New("inputs must not be empty")
+	}
+	if len(targets) != len(inputs) {
+		return fmt.Errorf("label count %d does not match input count %d", len(targets), len(inputs))
+	}
+	return p.lib.fitTextLabels(p.handle, inputs, targets, 64, 30, 0.01)
+}
+
 // PredictNumbers predicts floating-point outputs.
 func (p *SimplePredictor) PredictNumbers(inputs [][]float64) ([]float64, error) {
 	flat, rows, cols, err := flattenMatrix(inputs)
@@ -109,6 +137,33 @@ func (p *SimplePredictor) PredictLabels(inputs [][]float64) ([]string, error) {
 		return nil, err
 	}
 	return p.lib.predictLabels(p.handle, flat, rows, cols)
+}
+
+// PredictTextNumbers predicts floating-point outputs from serialized text or JSON inputs.
+func (p *SimplePredictor) PredictTextNumbers(inputs []string) ([]float64, error) {
+	if len(inputs) == 0 {
+		return nil, errors.New("inputs must not be empty")
+	}
+	return p.lib.predictTextNumbers(p.handle, inputs)
+}
+
+// PredictTextInts predicts integer outputs from serialized text or JSON inputs.
+func (p *SimplePredictor) PredictTextInts(inputs []string) ([]int, error) {
+	if len(inputs) == 0 {
+		return nil, errors.New("inputs must not be empty")
+	}
+	return p.lib.predictTextInts(p.handle, inputs)
+}
+
+// PredictTextLabels predicts string labels from serialized text or JSON inputs.
+func (p *SimplePredictor) PredictTextLabels(inputs []string) ([]string, error) {
+	if p.OutputType != OutputCategory {
+		return nil, errors.New("predict labels requires a categorical predictor")
+	}
+	if len(inputs) == 0 {
+		return nil, errors.New("inputs must not be empty")
+	}
+	return p.lib.predictTextLabels(p.handle, inputs)
 }
 
 // Save writes a .snet model directory.
@@ -153,25 +208,33 @@ func flattenMatrix(inputs [][]float64) ([]float64, int, int, error) {
 }
 
 type nativeLibrary struct {
-	dll                 *syscall.LazyDLL
-	createProc          *syscall.LazyProc
-	destroyProc         *syscall.LazyProc
-	fitNumericProc      *syscall.LazyProc
-	fitLabelsProc       *syscall.LazyProc
-	predictNumericProc  *syscall.LazyProc
-	predictIntProc      *syscall.LazyProc
-	predictClassProc    *syscall.LazyProc
-	classLabelCountProc *syscall.LazyProc
-	classLabelCopyProc  *syscall.LazyProc
-	saveProc            *syscall.LazyProc
-	loadProc            *syscall.LazyProc
-	outputTypeProc      *syscall.LazyProc
+	dll                  *syscall.LazyDLL
+	createProc           *syscall.LazyProc
+	destroyProc          *syscall.LazyProc
+	fitNumericProc       *syscall.LazyProc
+	fitLabelsProc        *syscall.LazyProc
+	fitTextNumericProc   *syscall.LazyProc
+	fitTextLabelsProc    *syscall.LazyProc
+	predictNumericProc   *syscall.LazyProc
+	predictIntProc       *syscall.LazyProc
+	predictClassProc     *syscall.LazyProc
+	predictTextProc      *syscall.LazyProc
+	predictTextIntProc   *syscall.LazyProc
+	predictTextClassProc *syscall.LazyProc
+	classLabelCountProc  *syscall.LazyProc
+	classLabelCopyProc   *syscall.LazyProc
+	saveProc             *syscall.LazyProc
+	loadProc             *syscall.LazyProc
+	outputTypeProc       *syscall.LazyProc
 }
 
 func defaultLibrary() (*nativeLibrary, error) {
 	path := os.Getenv("SIMPLENET_NATIVE_LIBRARY")
 	if path == "" {
 		candidates := []string{
+			filepath.Join("..", "build-native", "Release", "simplennet.dll"),
+			filepath.Join("build-native", "Release", "simplennet.dll"),
+			"simplennet.dll",
 			filepath.Join("..", "build-native", "Release", "simplennet_native.dll"),
 			filepath.Join("build-native", "Release", "simplennet_native.dll"),
 			"simplennet_native.dll",
@@ -184,7 +247,7 @@ func defaultLibrary() (*nativeLibrary, error) {
 		}
 	}
 	if path == "" {
-		return nil, errors.New("set SIMPLENET_NATIVE_LIBRARY to the built simplennet_native.dll")
+		return nil, errors.New("set SIMPLENET_NATIVE_LIBRARY to the built simplennet.dll")
 	}
 	return loadLibrary(path)
 }
@@ -199,9 +262,14 @@ func loadLibrary(path string) (*nativeLibrary, error) {
 	lib.destroyProc = lib.dll.NewProc("snet_destroy")
 	lib.fitNumericProc = lib.dll.NewProc("snet_fit_numeric_bits")
 	lib.fitLabelsProc = lib.dll.NewProc("snet_fit_labels_bits")
+	lib.fitTextNumericProc = lib.dll.NewProc("snet_fit_text_numeric_bits")
+	lib.fitTextLabelsProc = lib.dll.NewProc("snet_fit_text_labels_bits")
 	lib.predictNumericProc = lib.dll.NewProc("snet_predict_numeric")
 	lib.predictIntProc = lib.dll.NewProc("snet_predict_ints")
 	lib.predictClassProc = lib.dll.NewProc("snet_predict_class_indices")
+	lib.predictTextProc = lib.dll.NewProc("snet_predict_text_numeric")
+	lib.predictTextIntProc = lib.dll.NewProc("snet_predict_text_ints")
+	lib.predictTextClassProc = lib.dll.NewProc("snet_predict_text_class_indices")
 	lib.classLabelCountProc = lib.dll.NewProc("snet_class_label_count")
 	lib.classLabelCopyProc = lib.dll.NewProc("snet_class_label_copy")
 	lib.saveProc = lib.dll.NewProc("snet_save")
@@ -265,6 +333,55 @@ func (lib *nativeLibrary) fitLabels(handle uintptr, flat []float64, rows, cols i
 	return nil
 }
 
+func (lib *nativeLibrary) fitTextNumeric(handle uintptr, inputs []string, targets []float64, width int, epochs int, lr float64) error {
+	cStrings, release, err := makeCStringArray(inputs)
+	if err != nil {
+		return err
+	}
+	defer release()
+	code, _, procErr := lib.fitTextNumericProc.Call(
+		handle,
+		uintptr(unsafe.Pointer(&cStrings[0])),
+		uintptr(len(inputs)),
+		flatPtr(targets),
+		uintptr(len(targets)),
+		uintptr(width),
+		uintptr(epochs),
+		uintptr(math.Float64bits(lr)),
+	)
+	if code != 0 {
+		return errorFromProc(procErr)
+	}
+	return nil
+}
+
+func (lib *nativeLibrary) fitTextLabels(handle uintptr, inputs []string, targets []string, width int, epochs int, lr float64) error {
+	inputStrings, releaseInputs, err := makeCStringArray(inputs)
+	if err != nil {
+		return err
+	}
+	defer releaseInputs()
+	targetStrings, releaseTargets, err := makeCStringArray(targets)
+	if err != nil {
+		return err
+	}
+	defer releaseTargets()
+	code, _, procErr := lib.fitTextLabelsProc.Call(
+		handle,
+		uintptr(unsafe.Pointer(&inputStrings[0])),
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&targetStrings[0])),
+		uintptr(len(targets)),
+		uintptr(width),
+		uintptr(epochs),
+		uintptr(math.Float64bits(lr)),
+	)
+	if code != 0 {
+		return errorFromProc(procErr)
+	}
+	return nil
+}
+
 func (lib *nativeLibrary) predictNumbers(handle uintptr, flat []float64, rows, cols int) ([]float64, error) {
 	outputs := make([]float64, rows)
 	code, _, err := lib.predictNumericProc.Call(handle, flatPtr(flat), uintptr(rows), uintptr(cols), flatPtr(outputs), uintptr(len(outputs)))
@@ -292,6 +409,84 @@ func (lib *nativeLibrary) predictLabels(handle uintptr, flat []float64, rows, co
 	code, _, err := lib.predictClassProc.Call(handle, flatPtr(flat), uintptr(rows), uintptr(cols), uintptr(unsafe.Pointer(&indices[0])), uintptr(len(indices)))
 	if code != 0 {
 		return nil, errorFromProc(err)
+	}
+
+	results := make([]string, len(indices))
+	for i, index := range indices {
+		buf := make([]byte, 256)
+		code, _, err := lib.classLabelCopyProc.Call(handle, index, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+		if code != 0 {
+			return nil, errorFromProc(err)
+		}
+		n := 0
+		for n < len(buf) && buf[n] != 0 {
+			n++
+		}
+		results[i] = string(buf[:n])
+	}
+	return results, nil
+}
+
+func (lib *nativeLibrary) predictTextNumbers(handle uintptr, inputs []string) ([]float64, error) {
+	cStrings, release, err := makeCStringArray(inputs)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	outputs := make([]float64, len(inputs))
+	code, _, procErr := lib.predictTextProc.Call(
+		handle,
+		uintptr(unsafe.Pointer(&cStrings[0])),
+		uintptr(len(inputs)),
+		flatPtr(outputs),
+		uintptr(len(outputs)),
+	)
+	if code != 0 {
+		return nil, errorFromProc(procErr)
+	}
+	return outputs, nil
+}
+
+func (lib *nativeLibrary) predictTextInts(handle uintptr, inputs []string) ([]int, error) {
+	cStrings, release, err := makeCStringArray(inputs)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	outputs := make([]int64, len(inputs))
+	code, _, procErr := lib.predictTextIntProc.Call(
+		handle,
+		uintptr(unsafe.Pointer(&cStrings[0])),
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&outputs[0])),
+		uintptr(len(outputs)),
+	)
+	if code != 0 {
+		return nil, errorFromProc(procErr)
+	}
+	results := make([]int, len(outputs))
+	for i, value := range outputs {
+		results[i] = int(value)
+	}
+	return results, nil
+}
+
+func (lib *nativeLibrary) predictTextLabels(handle uintptr, inputs []string) ([]string, error) {
+	cStrings, release, err := makeCStringArray(inputs)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	indices := make([]uintptr, len(inputs))
+	code, _, procErr := lib.predictTextClassProc.Call(
+		handle,
+		uintptr(unsafe.Pointer(&cStrings[0])),
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&indices[0])),
+		uintptr(len(indices)),
+	)
+	if code != 0 {
+		return nil, errorFromProc(procErr)
 	}
 
 	results := make([]string, len(indices))

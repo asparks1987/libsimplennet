@@ -43,6 +43,26 @@ def test_normalization_accepts_pandas_dataframes_when_available():
     assert array == [[1.0, 3.0], [2.0, 4.0]]
 
 
+def test_normalization_encodes_mixed_python_objects():
+    predictor = SimplePredictor(feature_width=16)
+
+    matrix = predictor._normalize_X(
+        [
+            {"user": "new", "cart": {"items": [1, "coupon"]}},
+            {"user": "team", "cart": {"items": [3, None]}},
+        ],
+        fitting=True,
+        y_length=2,
+    )
+    row = predictor._normalize_X({"user": "new", "cart": {"items": [2, "coupon"]}}, fitting=False)
+
+    assert predictor.input_encoding_ == "universal"
+    assert len(matrix) == 2
+    assert len(matrix[0]) == 16
+    assert len(row) == 1
+    assert len(row[0]) == 16
+
+
 def test_normalization_rejects_wrong_feature_count():
     predictor = SimplePredictor()
     predictor._normalize_X([[1, 2]], fitting=True, y_length=1)

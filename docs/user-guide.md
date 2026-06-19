@@ -20,6 +20,25 @@ many = predictor.predict([[1000], [1300]])
 
 One input row returns one value. Multiple input rows return a list.
 
+## Predict From Any Datatype
+
+For arbitrary project data, serialize each value to a stable JSON/text string and use `fit_text`/`predict_text`.
+
+```python
+events = [
+    '{"kind":"cart","items":1}',
+    '{"kind":"cart","items":2}',
+    '{"kind":"cart","items":3}',
+]
+
+predictor = SimplePredictor(output_type=int, epochs=30, learning_rate=0.001)
+predictor.fit_text(events, [2, 4, 6])
+
+single = predictor.predict_text(['{"kind":"cart","items":4}'])
+```
+
+This is the portable path for sharing `.snet` models across Python, C++, Java, and Go.
+
 ## Save
 
 ```python

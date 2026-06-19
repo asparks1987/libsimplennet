@@ -66,6 +66,58 @@ void test_save_load_round_trip() {
     std::filesystem::remove_all(path);
 }
 
+void test_text_int_prediction_and_save_load() {
+    const std::filesystem::path path = std::filesystem::temp_directory_path() / "libsimplennet-text-model.snet";
+    std::filesystem::remove_all(path);
+
+    simplennet::TrainingOptions options;
+    options.epochs = 10;
+    options.learning_rate = 0.001;
+    options.hidden_layers = {4};
+    options.seed = 123;
+
+    simplennet::SimplePredictor predictor(simplennet::OutputType::Int, options);
+    predictor.fit_text(
+        {
+            R"({"kind":"cart","items":1})",
+            R"({"kind":"cart","items":2})",
+            R"({"kind":"cart","items":3})",
+        },
+        {2, 4, 6},
+        32);
+
+    const auto result = predictor.predict_text_ints({R"({"kind":"cart","items":4})"});
+    assert(result.size() == 1);
+
+    predictor.save(path);
+    const auto loaded = simplennet::SimplePredictor::load(path);
+    const auto reloaded = loaded.predict_text_ints({R"({"kind":"cart","items":4})"});
+    assert(reloaded.size() == 1);
+
+    std::filesystem::remove_all(path);
+}
+
+void test_text_category_prediction() {
+    simplennet::TrainingOptions options;
+    options.epochs = 20;
+    options.learning_rate = 0.05;
+    options.hidden_layers = {4};
+
+    simplennet::SimplePredictor predictor(simplennet::OutputType::Category, options);
+    predictor.fit_text_labels(
+        {
+            R"({"user":"new","plan":"free"})",
+            R"({"user":"team","plan":"enterprise"})",
+            R"({"user":"new","plan":"trial"})",
+            R"({"user":"team","plan":"business"})",
+        },
+        {"self_serve", "sales", "self_serve", "sales"},
+        32);
+    const auto result = predictor.predict_text_labels({R"({"user":"team","plan":"enterprise"})"});
+    assert(result.size() == 1);
+    assert(result[0] == "self_serve" || result[0] == "sales");
+}
+
 void test_deterministic_training() {
     simplennet::TrainingOptions options;
     options.epochs = 10;
@@ -109,6 +161,8 @@ int main() {
     test_float_prediction();
     test_category_prediction();
     test_save_load_round_trip();
+    test_text_int_prediction_and_save_load();
+    test_text_category_prediction();
     test_deterministic_training();
     test_invalid_dimensions();
     test_missing_model_errors();

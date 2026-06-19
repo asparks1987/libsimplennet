@@ -19,6 +19,7 @@ dist/
 dist_verify/
 wheel_smoke/
 java/target/
+*.class
 *.egg-info/
 
 *.keras

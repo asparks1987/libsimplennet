@@ -155,6 +155,54 @@ JNIEXPORT void JNICALL Java_ai_simplennet_SimplePredictor_nativeFitLabels(
     }
 }
 
+JNIEXPORT void JNICALL Java_ai_simplennet_SimplePredictor_nativeFitTextNumeric(
+    JNIEnv* env,
+    jclass,
+    jlong handle,
+    jobjectArray inputs,
+    jdoubleArray targets,
+    jint width,
+    jint epochs,
+    jdouble learning_rate) {
+    try {
+        auto* predictor = from_handle(handle);
+        simplennet::TrainingOptions options = predictor->training_options();
+        options.epochs = static_cast<std::size_t>(epochs);
+        options.learning_rate = static_cast<double>(learning_rate);
+        predictor->set_training_options(options);
+        predictor->fit_text(
+            to_strings(env, inputs),
+            to_doubles(env, targets),
+            static_cast<std::size_t>(width));
+    } catch (const std::exception& exc) {
+        throw_java(env, exc.what());
+    }
+}
+
+JNIEXPORT void JNICALL Java_ai_simplennet_SimplePredictor_nativeFitTextLabels(
+    JNIEnv* env,
+    jclass,
+    jlong handle,
+    jobjectArray inputs,
+    jobjectArray targets,
+    jint width,
+    jint epochs,
+    jdouble learning_rate) {
+    try {
+        auto* predictor = from_handle(handle);
+        simplennet::TrainingOptions options = predictor->training_options();
+        options.epochs = static_cast<std::size_t>(epochs);
+        options.learning_rate = static_cast<double>(learning_rate);
+        predictor->set_training_options(options);
+        predictor->fit_text_labels(
+            to_strings(env, inputs),
+            to_strings(env, targets),
+            static_cast<std::size_t>(width));
+    } catch (const std::exception& exc) {
+        throw_java(env, exc.what());
+    }
+}
+
 JNIEXPORT jdoubleArray JNICALL Java_ai_simplennet_SimplePredictor_nativePredictNumbers(JNIEnv* env, jclass, jlong handle, jobjectArray inputs) {
     try {
         auto values = from_handle(handle)->predict_numbers(to_matrix(env, inputs));
@@ -186,6 +234,59 @@ JNIEXPORT jobjectArray JNICALL Java_ai_simplennet_SimplePredictor_nativePredictL
         jobjectArray result = env->NewObjectArray(static_cast<jsize>(values.size()), string_class, nullptr);
         for (jsize i = 0; i < static_cast<jsize>(values.size()); ++i) {
             env->SetObjectArrayElement(result, i, env->NewStringUTF(values[static_cast<std::size_t>(i)].c_str()));
+        }
+        return result;
+    } catch (const std::exception& exc) {
+        throw_java(env, exc.what());
+        return nullptr;
+    }
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_ai_simplennet_SimplePredictor_nativePredictTextNumbers(
+    JNIEnv* env,
+    jclass,
+    jlong handle,
+    jobjectArray inputs) {
+    try {
+        auto values = from_handle(handle)->predict_text_numbers(to_strings(env, inputs));
+        jdoubleArray result = env->NewDoubleArray(static_cast<jsize>(values.size()));
+        env->SetDoubleArrayRegion(result, 0, static_cast<jsize>(values.size()), values.data());
+        return result;
+    } catch (const std::exception& exc) {
+        throw_java(env, exc.what());
+        return nullptr;
+    }
+}
+
+JNIEXPORT jintArray JNICALL Java_ai_simplennet_SimplePredictor_nativePredictTextInts(
+    JNIEnv* env,
+    jclass,
+    jlong handle,
+    jobjectArray inputs) {
+    try {
+        auto values = from_handle(handle)->predict_text_ints(to_strings(env, inputs));
+        jintArray result = env->NewIntArray(static_cast<jsize>(values.size()));
+        env->SetIntArrayRegion(result, 0, static_cast<jsize>(values.size()), values.data());
+        return result;
+    } catch (const std::exception& exc) {
+        throw_java(env, exc.what());
+        return nullptr;
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_ai_simplennet_SimplePredictor_nativePredictTextLabels(
+    JNIEnv* env,
+    jclass,
+    jlong handle,
+    jobjectArray inputs) {
+    try {
+        auto values = from_handle(handle)->predict_text_labels(to_strings(env, inputs));
+        jclass string_class = env->FindClass("java/lang/String");
+        jobjectArray result = env->NewObjectArray(static_cast<jsize>(values.size()), string_class, nullptr);
+        for (jsize i = 0; i < static_cast<jsize>(values.size()); ++i) {
+            jstring value = env->NewStringUTF(values[static_cast<std::size_t>(i)].c_str());
+            env->SetObjectArrayElement(result, i, value);
+            env->DeleteLocalRef(value);
         }
         return result;
     } catch (const std::exception& exc) {
@@ -259,9 +360,14 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
         {"nativeDestroy", "(J)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeDestroy)},
         {"nativeFitNumeric", "(J[[D[DID)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeFitNumeric)},
         {"nativeFitLabels", "(J[[D[Ljava/lang/String;ID)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeFitLabels)},
+        {"nativeFitTextNumeric", "(J[Ljava/lang/String;[DIID)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeFitTextNumeric)},
+        {"nativeFitTextLabels", "(J[Ljava/lang/String;[Ljava/lang/String;IID)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeFitTextLabels)},
         {"nativePredictNumbers", "(J[[D)[D", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictNumbers)},
         {"nativePredictInts", "(J[[D)[I", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictInts)},
         {"nativePredictLabels", "(J[[D)[Ljava/lang/String;", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictLabels)},
+        {"nativePredictTextNumbers", "(J[Ljava/lang/String;)[D", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictTextNumbers)},
+        {"nativePredictTextInts", "(J[Ljava/lang/String;)[I", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictTextInts)},
+        {"nativePredictTextLabels", "(J[Ljava/lang/String;)[Ljava/lang/String;", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativePredictTextLabels)},
         {"nativeSave", "(JLjava/lang/String;)V", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeSave)},
         {"nativeLoad", "(Ljava/lang/String;)J", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeLoad)},
         {"nativeOutputType", "(J)I", reinterpret_cast<void*>(Java_ai_simplennet_SimplePredictor_nativeOutputType)},
