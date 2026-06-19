@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>libsimplennet | quick neural predictions for any project</title>
+    <meta
+      name="description"
+      content="libsimplennet is a small multi-language neural-network SDK for quick predictions in Python, C++, Java, and Go."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="nav" aria-label="Primary">
+        <div class="brand">
+          <span class="brand-mark">sn</span>
+          <span>libsimplennet</span>
+        </div>
+        <div class="nav-links">
+          <a href="#why">Why</a>
+          <a href="#quickstart">Quickstart</a>
+          <a href="#languages">Languages</a>
+          <a href="#use-cases">Use cases</a>
+        </div>
+      </nav>
+
+      <main>
+        <header class="hero">
+          <div>
+            <span class="eyebrow"><span class="pulse"></span> Typed neural predictions, no model ceremony</span>
+            <h1>Plug in a tiny network. Start predicting.</h1>
+            <p class="hero-copy">
+              libsimplennet is a compact SDK for adding quick supervised predictions to ordinary apps.
+              Pick the output type, feed it examples, and call predict from Python, C++, Java, or Go.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#quickstart">Start in 30 seconds</a>
+              <a class="button" href="#languages">See language support</a>
+            </div>
+          </div>
+
+          <div class="network-stage" aria-label="Neural network diagram">
+            <span class="floating-label one">input: app data</span>
+            <span class="floating-label two">output: int | float | label</span>
+            <svg viewBox="0 0 620 500" role="img" aria-labelledby="network-title">
+              <title id="network-title">A simple neural network connecting input data to typed predictions</title>
+              <line class="network-line" x1="96" y1="130" x2="280" y2="95"></line>
+              <line class="network-line" x1="96" y1="130" x2="280" y2="205"></line>
+              <line class="network-line" x1="96" y1="250" x2="280" y2="205"></line>
+              <line class="network-line" x1="96" y1="250" x2="280" y2="315"></line>
+              <line class="network-line" x1="96" y1="370" x2="280" y2="315"></line>
+              <line class="network-line" x1="280" y1="95" x2="455" y2="165"></line>
+              <line class="network-line" x1="280" y1="205" x2="455" y2="165"></line>
+              <line class="network-line" x1="280" y1="205" x2="455" y2="275"></line>
+              <line class="network-line" x1="280" y1="315" x2="455" y2="275"></line>
+              <line class="network-line" x1="455" y1="165" x2="535" y2="250"></line>
+              <line class="network-line" x1="455" y1="275" x2="535" y2="250"></line>
+              <circle class="node input" cx="96" cy="130" r="28"></circle>
+              <circle class="node input" cx="96" cy="250" r="28"></circle>
+              <circle class="node input" cx="96" cy="370" r="28"></circle>
+              <circle class="node hidden" cx="280" cy="95" r="31"></circle>
+              <circle class="node hidden" cx="280" cy="205" r="31"></circle>
+              <circle class="node hidden" cx="280" cy="315" r="31"></circle>
+              <circle class="node hidden" cx="455" cy="165" r="33"></circle>
+              <circle class="node hidden" cx="455" cy="275" r="33"></circle>
+              <circle class="node output" cx="535" cy="250" r="36"></circle>
+            </svg>
+          </div>
+        </header>
+
+        <section id="why">
+          <div class="section-head">
+            <h2>A simple network for practical predictions</h2>
+            <p>
+              Most projects do not need a research stack just to learn from examples.
+              libsimplennet gives you a small dense network, a shared model format, and typed outputs that fit normal application code.
+            </p>
+          </div>
+          <div class="grid three">
+            <article class="tile">
+              <strong>Choose the type</strong>
+              <p>Train predictors for integers, floating-point values, or category labels.</p>
+            </article>
+            <article class="tile">
+              <strong>Train from examples</strong>
+              <p>Pass rows of tabular data and the target answers your app already understands.</p>
+            </article>
+            <article class="tile">
+              <strong>Reuse everywhere</strong>
+              <p>Save a `.snet` model once and load it from the supported language wrappers.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="quickstart">
+          <div class="section-head">
+            <h2>One tiny API</h2>
+            <p>Import, set the output type, fit, predict. The SDK stays intentionally small so it can live inside tools, services, scripts, and desktop apps.</p>
+          </div>
+          <div class="code-panel">
+            <div class="code-bar">
+              <span>Python quickstart</span>
+              <span class="code-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            </div>
+            <pre><code>from simplennet import SimplePredictor
+
+predictor = SimplePredictor(
+    output_type=int,
+    epochs=30,
+    learning_rate=0.001,
+    hidden_units=(4,),
+)
+
+predictor.fit([[0], [1], [2], [3]], [0, 2, 4, 6])
+print(predictor.predict([[4]]))</code></pre>
+          </div>
+        </section>
+
+        <section id="languages">
+          <div class="section-head">
+            <h2>Built for mixed-language projects</h2>
+            <p>The native C++ core keeps behavior consistent while each wrapper feels natural in its own language.</p>
+          </div>
+          <div class="grid four">
+            <article class="language-card">
+              <h3>Python <span class="tag">ready</span></h3>
+              <p>Friendly lists, row dictionaries, NumPy arrays, and pandas DataFrames.</p>
+            </article>
+            <article class="language-card">
+              <h3>C++ <span class="tag">core</span></h3>
+              <p>The shared neural engine, C ABI, portable save format, and test suite.</p>
+            </article>
+            <article class="language-card">
+              <h3>Java <span class="tag">JNI</span></h3>
+              <p>Drop the native DLL on the library path and call typed prediction methods.</p>
+            </article>
+            <article class="language-card">
+              <h3>Go <span class="tag">DLL</span></h3>
+              <p>Use the Windows native wrapper for fit, predict, save, and load.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="use-cases">
+          <div class="section-head">
+            <h2>Useful anywhere quick prediction helps</h2>
+            <p>libsimplennet is for app-level prediction problems where a small supervised network is enough and speed of integration matters.</p>
+          </div>
+          <div class="use-cases">
+            <div class="use-case"><span class="icon">#</span><div><strong>Scores and counts</strong><br>Estimate quantities, rankings, thresholds, and simple numeric outcomes.</div></div>
+            <div class="use-case"><span class="icon">$</span><div><strong>Operational estimates</strong><br>Predict prices, durations, demand, utilization, or confidence values.</div></div>
+            <div class="use-case"><span class="icon">A</span><div><strong>Labels and routing</strong><br>Classify rows into categories your app can route, display, or trigger on.</div></div>
+            <div class="use-case"><span class="icon">S</span><div><strong>Saved local models</strong><br>Train once, persist as `.snet`, and reload without rebuilding the network.</div></div>
+          </div>
+        </section>
+
+        <section class="cta" aria-label="Call to action">
+          <div>
+            <h2>Small enough to embed. Useful enough to keep.</h2>
+            <p>Start with a few examples, pick the output type, and let the project learn the shape of the answer.</p>
+          </div>
+          <a class="button" href="#quickstart">Try the quickstart</a>
+        </section>
+      </main>
+
+      <footer>
+        libsimplennet: a simple neural prediction SDK for apps that need answers quickly.
+      </footer>
+    </div>
+  </body>
+</html>

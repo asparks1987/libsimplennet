@@ -1,0 +1,16 @@
+site_name: libsimplennet
+site_description: A simple typed neural-network prediction SDK for supervised tabular data.
+repo_url: https://github.com/asparks1987/libsimplennet
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Product Website: website/index.html
+  - Installation: installation.md
+  - Architecture: architecture.md
+  - User Guide: user-guide.md
+  - C++: cpp.md
+  - Java And Go: java-go.md
+  - Types: types.md
+  - API: api.md
+  - Examples: examples.md

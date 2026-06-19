@@ -1,45 +1,179 @@
-# Time Series Prediction with LSTM
+# libsimplennet
 
-This script uses a Long Short-Term Memory (LSTM) model to predict future values in a time series. It demonstrates the complete machine learning workflow including data loading, preprocessing, model creation, training, evaluation, prediction, and model persistence.
+**Plug a small neural network into any project and get quick typed predictions.**
 
-## Installation
+libsimplennet is a lightweight multi-language prediction SDK. Import it, choose the output type you want, train it with examples from your app, and call `predict`. It is built for practical use cases where you need a simple supervised network without dragging a research stack into the project.
 
-Before running the script, make sure to install the necessary Python libraries:
+The same native C++ core powers Python, C++, Java, and Go, so models can be saved once as `.snet` directories and reused across supported runtimes.
 
+## Why libsimplennet?
 
-pip install pandas numpy scikit-learn keras tensorflow
+- **Simple mental model:** choose `int`, `float`, or `category`, then `fit` and `predict`.
+- **Fast to embed:** designed for tools, services, scripts, desktop apps, and local workflows.
+- **Multi-language by design:** C++ core, Python wrapper, Java JNI wrapper, and Go native-DLL wrapper.
+- **Portable model files:** save trained networks as `.snet` directories with metadata and weights.
+- **No heavy ML ceremony:** a small dense neural network for quick supervised tabular predictions.
 
-Script Usage
-Data Format
-This script requires a CSV file as input. The CSV file should include a date and time column, as well as a column for the target variable to predict. The remaining columns are considered as features.
+## Good fits
 
-Here's an example of the expected CSV file format:
-date,time,feature1,feature2,target
-2021-01-01,00:00:00,123.4,567.8,9.10
-2021-01-01,01:00:00,234.5,678.9,0.12
-Function Overview
-The script contains the following functions:
+Use libsimplennet when your project needs quick predictions from structured examples:
 
-load_data(file_path: str) -> pd.DataFrame: Loads data from a CSV file.
-preprocess_data(df: pd.DataFrame, target_col: str) -> Tuple[pd.DataFrame, pd.Series]: Preprocesses the data by converting the date and time to timestamp, normalizing all feature columns, and separating the features and target variable.
-split_data(X: pd.DataFrame, y: pd.Series) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: Splits the data into training and test sets.
-create_model(input_shape: Tuple[int, int]) -> keras.models.Sequential: Creates a LSTM model.
-train_model(model: keras.models.Sequential, X_train: pd.DataFrame, y_train: pd.Series, epochs: int = 50, validation_split: float = 0.2) -> Tuple[keras.models.Sequential, keras.callbacks.History]: Trains the LSTM model on the training data.
-evaluate_model(model: keras.models.Sequential, X_test: pd.DataFrame, y_test: pd.Series) -> float: Evaluates the model on the test data and returns the loss.
-predict_sample(model: keras.models.Sequential, X_test: pd.DataFrame) -> float: Predicts the value for the first sample in the test set.
-save_model(model: keras.models.Sequential, model_path: str): Saves the trained model to a file.
-load_saved_model(model_path: str) -> keras.models.Sequential: Loads a trained model from a file.
-By default, the script reads the data from a file named data.csv, uses a column named target as the target variable, trains a LSTM model, and saves the trained model to a file named model.h5.
+- Predict integer outputs such as counts, scores, levels, or ranks.
+- Predict floating-point outputs such as price, duration, demand, confidence, or utilization.
+- Predict category labels for routing, classification, decisions, or UI behavior.
+- Train a local model and reload it later without rebuilding the network each run.
 
-You can modify these defaults by changing the following lines in the script:
-file_path = 'data.csv'
-target_col = 'target'
-model_path = 'model.h5'
-Error Handling
-The script includes basic error handling. If an error occurs (e.g., the data file does not exist, the target column is not found in the data, etc.), the script will print an error message and terminate.
+It is intentionally small. For large-scale deep learning, GPU training, images, audio, or huge model pipelines, use a full ML framework. For app-level prediction, libsimplennet keeps the path short.
 
-Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+## Python quickstart
 
-License
-MIT
+Install from this checkout:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Train and predict an integer:
+
+```python
+from simplennet import SimplePredictor
+
+predictor = SimplePredictor(
+    output_type=int,
+    epochs=30,
+    learning_rate=0.001,
+    hidden_units=(4,),
+)
+
+predictor.fit([[0], [1], [2], [3]], [0, 2, 4, 6])
+print(predictor.predict([[4]]))
+```
+
+Save and load the trained network:
+
+```python
+predictor.save("double.snet")
+
+loaded = SimplePredictor.load("double.snet")
+print(loaded.predict([[5]]))
+```
+
+## C++ quickstart
+
+```cpp
+#include "simplennet/simple_predictor.hpp"
+
+#include <iostream>
+
+int main() {
+    simplennet::TrainingOptions options;
+    options.epochs = 30;
+    options.learning_rate = 0.001;
+    options.hidden_layers = {4};
+
+    simplennet::SimplePredictor predictor(simplennet::OutputType::Int, options);
+    predictor.fit({{0}, {1}, {2}, {3}}, {0, 2, 4, 6});
+
+    std::cout << predictor.predict_ints({{4}}).front() << "\n";
+}
+```
+
+Build and test the native core:
+
+```bash
+cmake -S . -B build-native
+cmake --build build-native --config Release
+ctest --test-dir build-native -C Release --output-on-failure
+```
+
+## Java quickstart
+
+```java
+SimplePredictor predictor = new SimplePredictor(OutputType.INT);
+predictor.fit(new double[][]{{0}, {1}, {2}, {3}}, new double[]{0, 2, 4, 6});
+int[] values = predictor.predictInts(new double[][]{{4}});
+```
+
+Run with the native DLL on the library path:
+
+```bash
+java -Djava.library.path=build-native/Release -cp java/target/classes ai.simplennet.SmokeTest
+```
+
+## Go quickstart
+
+```go
+predictor, err := simplennet.NewSimplePredictor(simplennet.OutputInt)
+if err != nil {
+    panic(err)
+}
+defer predictor.Close()
+
+_ = predictor.Fit([][]float64{{0}, {1}, {2}, {3}}, []float64{0, 2, 4, 6})
+values, _ := predictor.PredictInts([][]float64{{4}})
+```
+
+Set the native DLL path before running:
+
+```powershell
+$env:SIMPLENET_NATIVE_LIBRARY = "D:\path\to\build-native\Release\simplennet_native.dll"
+go test ./...
+```
+
+## Website and docs
+
+A standalone product website lives in `docs/website/index.html`. Open it directly in a browser.
+
+The MkDocs content also lives in `docs/`:
+
+```bash
+python -m pip install -e ".[docs]"
+mkdocs serve
+```
+
+## Model format
+
+`save()` writes a `.snet` directory:
+
+- `model.json` stores architecture, output type, labels, feature names, training config, and `snet_format_version`.
+- `weights.bin` stores little-endian weights and biases.
+
+The format starts at `snet_format_version: 1`.
+
+## Project layout
+
+- `include/simplennet`: public C++ and C ABI headers
+- `src/cpp`: shared native neural-network core
+- `src/simplennet`: Python API facade
+- `bindings/java`: JNI bridge
+- `java`: Java wrapper and smoke test
+- `go`: Go wrapper and tests
+- `docs`: website and documentation
+
+## Development
+
+Run Python tests:
+
+```bash
+python -m pytest
+```
+
+Run C++ tests:
+
+```bash
+cmake -S . -B build-native
+cmake --build build-native --config Release
+ctest --test-dir build-native -C Release --output-on-failure
+```
+
+Build a Python wheel:
+
+```bash
+python -m pip wheel . --no-deps
+```
+
+Legacy imports through `libSimpleNNet` remain available, but new projects should use:
+
+```python
+from simplennet import SimplePredictor
+```

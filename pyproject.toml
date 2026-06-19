@@ -1,0 +1,58 @@
+[build-system]
+requires = [
+  "scikit-build-core>=0.10",
+  "pybind11>=2.12",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "libsimplennet"
+version = "0.2.0"
+description = "A multi-language typed neural-network prediction SDK with a shared C++ core."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Aryn M. Sparks", email = "Aryn.sparks1987@gmail.com" }
+]
+keywords = ["neural-network", "prediction", "sdk", "cpp", "python", "java", "go"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "numpy",
+  "pandas",
+]
+docs = [
+  "mkdocs",
+  "mkdocs-material",
+]
+gui = [
+  "matplotlib",
+  "PyQt5",
+]
+
+[project.urls]
+Homepage = "https://github.com/asparks1987/libsimplennet"
+Repository = "https://github.com/asparks1987/libsimplennet"
+Documentation = "https://github.com/asparks1987/libsimplennet#readme"
+
+[tool.scikit-build]
+wheel.packages = ["src/simplennet"]
+cmake.build-type = "Release"
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
